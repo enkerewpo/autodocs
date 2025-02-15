@@ -14,6 +14,10 @@ while true; do
     git push
     cd ../hvisor-book
     echo "Auto-translation pushed to remote repository at time: $(date)"
+    # build the book and deploy to /www/wwwroot/hvisor-en.oscommunity.cn
+    mdbook build
+    cp -r ./book /www/wwwroot/hvisor-en.oscommunity.cn
+    echo "Book built and deployed to /www/wwwroot/hvisor-en.oscommunity.cn at time: $(date)"
     echo "Sleeping for $TIME_INTERVAL seconds"
     sleep $TIME_INTERVAL
 done
