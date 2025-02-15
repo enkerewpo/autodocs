@@ -1,2 +1,2 @@
-# deepdocs
-documentation auto translation using deepseek with manual/auto checking and reviewing
+# autodocs
+documentation auto translation using ai with manual/auto checking and reviewing
