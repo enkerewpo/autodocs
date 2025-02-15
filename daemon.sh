@@ -13,10 +13,9 @@ while true; do
     git commit -m "Auto-translation update at $(date)"
     git push
     echo "Auto-translation pushed to remote repository at time: $(date)"
-    # build the book and deploy to /www/wwwroot/hvisor-en.oscommunity.cn
     mdbook build
-    cp -r ./book/** /www/wwwroot/hvisor-en.oscommunity.cn
-    echo "Book built and deployed to /www/wwwroot/hvisor-en.oscommunity.cn at time: $(date)"
+    cp -r ./book/** /www/wwwroot/hvisor-en.wheatfox.dev
+    echo "Book built and deployed!"
     echo "Sleeping for $TIME_INTERVAL seconds"
     cd ../autodocs
     sleep $TIME_INTERVAL
