@@ -7,17 +7,17 @@ while true; do
     echo "Running auto-translation at time: $(date)"
     cargo run -- run hvisor-book.yml
     echo "Auto-translation finished at time: $(date)"
-    cp -r ./workspace/hvisor-book-translated ../hvisor-book-en
+    cp -r ./workspace/hvisor-book-translated/** ../hvisor-book-en
     cd ../hvisor-book-en
     git add .
     git commit -m "Auto-translation update at $(date)"
     git push
-    cd ../hvisor-book
     echo "Auto-translation pushed to remote repository at time: $(date)"
     # build the book and deploy to /www/wwwroot/hvisor-en.oscommunity.cn
     mdbook build
-    cp -r ./book /www/wwwroot/hvisor-en.oscommunity.cn
+    cp -r ./book/** /www/wwwroot/hvisor-en.oscommunity.cn
     echo "Book built and deployed to /www/wwwroot/hvisor-en.oscommunity.cn at time: $(date)"
     echo "Sleeping for $TIME_INTERVAL seconds"
+    cd ../autodocs
     sleep $TIME_INTERVAL
 done
