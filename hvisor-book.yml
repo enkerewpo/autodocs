@@ -1,0 +1,10 @@
+repo: https://github.com/syswonder/hvisor-book # repository URL for auto git clone and translation
+branch: main
+filter:
+  target: "*.md" # translation file type, example: "*.md *.html *.rst", separate by space
+  include:
+    - docs/ # all files in docs/ folder with the target type above will be translated
+    - src/test.txt # custom file added to translation target, regardless of the file type
+  exclude:
+    - docs/test/ # exclude all files in docs/test/ folder from translation
+    - README.md # exclude README.md file from translation
