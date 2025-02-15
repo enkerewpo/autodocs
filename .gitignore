@@ -172,3 +172,4 @@ cython_debug/
 workspace
 key.txt
 .DS_Store
+nohup.out
