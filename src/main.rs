@@ -44,8 +44,9 @@ fn prase_target_suffix(target: &str) -> Vec<String> {
     // "*.md *.txt" -> "md txt"
     let mut suffix = target.replace("*", "");
     suffix = suffix.replace(".", "");
-    suffix = suffix.trim().replace(" ", "");
-    suffix.split(" ").map(|s| s.to_string()).collect()
+    let r = suffix.split(" ").map(|s| s.to_string()).collect();
+    println!("Suffix: {:?}", r);
+    r
 }
 
 fn agent_translate_deepseek(content: String) -> String {
@@ -274,7 +275,8 @@ fn run(config: TranslationConfig) {
         // if content is empty, just copy the file
         if content.is_empty() {
             std::fs::write(&translated_path, content).unwrap();
-            println!("file is empty, copied");
+            println!("file empty, copied");
+            translated_count += 1;
             continue;
         }
         // translate the content
