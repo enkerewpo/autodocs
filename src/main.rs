@@ -270,15 +270,15 @@ fn run(config: TranslationConfig) {
         if !std::path::Path::new(&translated_dir).exists() {
             std::fs::create_dir_all(&translated_dir).unwrap();
         }
-        print!("Translating file {}...", filename(f));
         let content = std::fs::read_to_string(&f).unwrap();
         // if content is empty, just copy the file
         if content.is_empty() {
             std::fs::write(&translated_path, content).unwrap();
-            println!("file empty, copied");
             translated_count += 1;
             continue;
         }
+        print!("Translating file {}...", filename(f));
+        std::io::stdout().flush().unwrap();
         // translate the content
         let translated_content = agent_translate(content);
         std::fs::write(&translated_path, translated_content).unwrap();

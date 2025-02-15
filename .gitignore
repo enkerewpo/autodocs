@@ -171,3 +171,4 @@ cython_debug/
 .pypirc
 workspace
 key.txt
+.DS_Store
