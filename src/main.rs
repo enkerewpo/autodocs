@@ -133,7 +133,7 @@ fn run(config: TranslationConfig) {
     let commit = String::from_utf8_lossy(&output.stdout).trim().to_string();
     meta.commit = commit.clone();
 
-    println!("Metadata: {:?}", meta);
+    // println!("Metadata: {:?}", meta);
 
     // iterate all files in the repo
     let mut q = vec![repo_path.clone()];
@@ -149,12 +149,13 @@ fn run(config: TranslationConfig) {
             let entry = entry.unwrap();
             let path = entry.path();
             if path.is_dir() {
+                // skip the .git folder
+                if path.ends_with(".git") {
+                    continue;
+                }
                 q.push(path.to_str().unwrap().to_string());
             } else {
                 let path = path.to_str().unwrap().to_string();
-                if path.contains(".git") {
-                    continue;
-                }
                 files.push(path);
             }
         }
@@ -164,7 +165,7 @@ fn run(config: TranslationConfig) {
     let filter = config.filter;
     let suffix = prase_target_suffix(&filter.target);
     let mut filtered_files = vec![];
-    for file in files {
+    for file in &files {
         // support suffix filter for now
         let mut include = false;
         for s in &suffix {
@@ -186,20 +187,35 @@ fn run(config: TranslationConfig) {
         if exclude {
             continue;
         }
-        filtered_files.push(file);
+        filtered_files.push(file.clone());
     }
-    println!("Filtered files: {:?}", filtered_files);
+    // println!("Filtered files: {:?}", filtered_files);
+    // first copy all files that not need to be translated(not in filtered_files)
+    for file in &files {
+        if !filtered_files.contains(&file) {
+            let translated_path = file.replace(&repo_path, &translated_repo_path);
+            let translated_dir = translated_path.rsplitn(2, "/").last().unwrap();
+            if !std::path::Path::new(&translated_dir).exists() {
+                std::fs::create_dir_all(&translated_dir).unwrap();
+            }
+            // read binary and write binary
+            let content = std::fs::read(&file).unwrap();
+            std::fs::write(&translated_path, content).unwrap();
+        }
+    }
     // update the metadata file
-    for f in filtered_files {
+    let mut translated_count = 0;
+    for f in &filtered_files {
         let hash = format!("{:x}", sha2::Sha256::digest(&std::fs::read(&f).unwrap()));
         let mut translated = false;
         for file in &meta.files {
-            if file.path == f && file.hash == hash {
+            if file.path == *f && file.hash == *hash {
                 translated = true;
                 break;
             }
         }
         if translated {
+            translated_count += 1;
             continue;
         }
         let translated_path = f.replace(&repo_path, &translated_repo_path);
@@ -209,11 +225,12 @@ fn run(config: TranslationConfig) {
         }
         let content = std::fs::read_to_string(&f).unwrap();
         // translate the content
-        let translated_content = content.clone();
+        let translated_content = "test_translation".to_string();
+        println!("Translating file, src={}, dst={}", f, translated_path);
         std::fs::write(&translated_path, translated_content).unwrap();
         let file_entry = FileEntry {
-            path: f,
-            hash: hash,
+            path: f.clone(),
+            hash,
             translation_timestamp: std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap()
@@ -232,6 +249,12 @@ fn run(config: TranslationConfig) {
         println!("Error writing the metadata file @ {}: {}", meta_path, e);
         return;
     }
+    println!(
+        "Translation finished, new files translated: {}, total files translated: {}, already translated files: {}",
+        filtered_files.len() - translated_count,
+        filtered_files.len(),
+        translated_count
+    );
 }
 
 fn main() {
