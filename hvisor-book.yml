@@ -1,10 +1,22 @@
 repo: https://github.com/syswonder/hvisor-book # repository URL for auto git clone and translation
 branch: main
+
+engine:
+  name: openai
+  url: https://apix.ai-gaochao.cn/v1/ # API endpoint
+  model: gpt-4-turbo
+  api_key_file: key.txt # store your api key here
+
+# engine:
+#   name: deepseek
+#   url: https://api.siliconflow.cn/v1/
+#   model: deepseek-ai/DeepSeek-V3
+#   api_key_file: key-silicon.txt
+
 filter:
-  target: "*.md *.toml" # translation file type, example: "*.md *.html *.rst", separate by space
+  target: "*.md *.toml"
   include:
-    - docs/ # all files in docs/ folder with the target type above will be translated
-    - src/test.txt # custom file added to translation target, regardless of the file type
+    - docs/
+    - src/test.txt
   exclude:
-    - docs/test/ # exclude all files in docs/test/ folder from translation
-    # - README.md # exclude README.md file from translation
+    - docs/test/

@@ -4,17 +4,26 @@ use serde_yaml::{self};
 use sha2::Digest;
 use std::io::Write;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 struct Filter {
     target: String,
     include: Vec<String>,
     exclude: Vec<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
+struct Engine {
+    name: String,
+    url: String,
+    model: String,
+    api_key_file: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 struct TranslationConfig {
     repo: String,
     branch: String,
+    engine: Engine,
     filter: Filter,
 }
 
@@ -52,16 +61,18 @@ fn prase_target_suffix(target: &str) -> Vec<String> {
 use openai_api_rust::chat::*;
 use openai_api_rust::*;
 
-fn agent_translate_deepseek(content: String) -> String {
-    let url = "https://api.siliconflow.cn/v1/";
-    let model = "deepseek-ai/DeepSeek-V3";
+fn agent_translate(content: String, config: &TranslationConfig) -> String {
+    let engine = &config.engine;
+    let url = &engine.url;
+    let model = &engine.model;
     let query = format!(
         "translate the content to English: please just reply with the translated content\n{}",
         content
     );
-    let key = std::fs::read_to_string("key-silicon.txt");
+    let key = std::fs::read_to_string(&engine.api_key_file);
     let auth = Auth::new(key.unwrap().trim());
-    let openai = OpenAI::new(auth, url);
+    let agent = OpenAI::new(auth, url);
+
     let body = ChatBody {
         model: model.to_string(),
         max_tokens: None,
@@ -79,51 +90,10 @@ fn agent_translate_deepseek(content: String) -> String {
             content: query,
         }],
     };
-    let rs = openai.chat_completion_create(&body);
+    let rs = agent.chat_completion_create(&body);
     let choice = rs.unwrap().choices;
     let message = &choice[0].message.as_ref().unwrap();
     message.content.clone()
-}
-
-fn agent_translate_openai(content: String) -> String {
-    let url = "https://apix.ai-gaochao.cn/v1/";
-    let model = "gpt-4-turbo";
-    let query = format!(
-        "translate the content to English: please just reply with the translated content\n{}",
-        content
-    );
-    let key = std::fs::read_to_string("key.txt");
-    let auth = Auth::new(key.unwrap().trim());
-    let openai = OpenAI::new(auth, url);
-    let body = ChatBody {
-        model: model.to_string(),
-        max_tokens: None,
-        temperature: Some(0.7),
-        top_p: Some(0.7),
-        n: Some(1),
-        stream: Some(false),
-        stop: None,
-        presence_penalty: None,
-        frequency_penalty: None,
-        logit_bias: None,
-        user: None,
-        messages: vec![Message {
-            role: Role::User,
-            content: query,
-        }],
-    };
-    let rs = openai.chat_completion_create(&body);
-    let choice = rs.unwrap().choices;
-    let message = &choice[0].message.as_ref().unwrap();
-    message.content.clone()
-}
-
-fn agent_translate(content: String, platform: &str) -> String {
-    match platform {
-        "openai" => agent_translate_openai(content),
-        "deepseek" => agent_translate_deepseek(content),
-        _ => agent_translate_openai(content),
-    }
 }
 
 fn run(config: TranslationConfig) {
@@ -137,8 +107,8 @@ fn run(config: TranslationConfig) {
     }
     // clone the repo
     // the translated snapshots will be places under ./workspace/<repo_name>-translated
-    let repo = config.repo;
-    let branch = config.branch;
+    let repo = &config.repo;
+    let branch = &config.branch;
     let workspace = "./workspace";
     let repo_name = repo.split("/").last().unwrap();
     let repo_name = repo_name.split(".").next().unwrap();
@@ -242,7 +212,7 @@ fn run(config: TranslationConfig) {
     }
     // println!("Files: {:?}", files);
     // filter the files
-    let filter = config.filter;
+    let filter = &config.filter;
     let suffix = prase_target_suffix(&filter.target);
     let mut filtered_files = vec![];
     for file in &files {
@@ -314,7 +284,7 @@ fn run(config: TranslationConfig) {
         print!("Translating file {}...", filename(f));
         std::io::stdout().flush().unwrap();
         // translate the content
-        let translated_content = agent_translate(content, "deepseek");
+        let translated_content = agent_translate(content, &config);
         std::fs::write(&translated_path, translated_content).unwrap();
         let file_entry = FileEntry {
             path: f.clone(),
