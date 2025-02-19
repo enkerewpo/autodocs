@@ -170,6 +170,6 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 workspace
-key.txt
+key*
 .DS_Store
 nohup.out

@@ -49,29 +49,22 @@ fn prase_target_suffix(target: &str) -> Vec<String> {
     r
 }
 
+use openai_api_rust::chat::*;
+use openai_api_rust::*;
+
 fn agent_translate_deepseek(content: String) -> String {
-    // DEEPSEEK
-    // let url = "http://localhost:11434/api/chat";
-    // let model = "deepseek-r1:14b";
-    todo!()
-}
-
-fn agent_translate(content: String) -> String {
-    use openai_api_rust::chat::*;
-    use openai_api_rust::*;
-
-    let url = "https://apix.ai-gaochao.cn/v1/";
-    let model = "gpt-4-turbo";
+    let url = "https://api.siliconflow.cn/v1/";
+    let model = "deepseek-ai/DeepSeek-V3";
     let query = format!(
         "translate the content to English: please just reply with the translated content\n{}",
         content
     );
-    let key = std::fs::read_to_string("key.txt");
+    let key = std::fs::read_to_string("key-silicon.txt");
     let auth = Auth::new(key.unwrap().trim());
     let openai = OpenAI::new(auth, url);
     let body = ChatBody {
         model: model.to_string(),
-        max_tokens: Some(2048),
+        max_tokens: None,
         temperature: Some(0.7),
         top_p: Some(0.7),
         n: Some(1),
@@ -90,6 +83,47 @@ fn agent_translate(content: String) -> String {
     let choice = rs.unwrap().choices;
     let message = &choice[0].message.as_ref().unwrap();
     message.content.clone()
+}
+
+fn agent_translate_openai(content: String) -> String {
+    let url = "https://apix.ai-gaochao.cn/v1/";
+    let model = "gpt-4-turbo";
+    let query = format!(
+        "translate the content to English: please just reply with the translated content\n{}",
+        content
+    );
+    let key = std::fs::read_to_string("key.txt");
+    let auth = Auth::new(key.unwrap().trim());
+    let openai = OpenAI::new(auth, url);
+    let body = ChatBody {
+        model: model.to_string(),
+        max_tokens: None,
+        temperature: Some(0.7),
+        top_p: Some(0.7),
+        n: Some(1),
+        stream: Some(false),
+        stop: None,
+        presence_penalty: None,
+        frequency_penalty: None,
+        logit_bias: None,
+        user: None,
+        messages: vec![Message {
+            role: Role::User,
+            content: query,
+        }],
+    };
+    let rs = openai.chat_completion_create(&body);
+    let choice = rs.unwrap().choices;
+    let message = &choice[0].message.as_ref().unwrap();
+    message.content.clone()
+}
+
+fn agent_translate(content: String, platform: &str) -> String {
+    match platform {
+        "openai" => agent_translate_openai(content),
+        "deepseek" => agent_translate_deepseek(content),
+        _ => agent_translate_openai(content),
+    }
 }
 
 fn run(config: TranslationConfig) {
@@ -280,7 +314,7 @@ fn run(config: TranslationConfig) {
         print!("Translating file {}...", filename(f));
         std::io::stdout().flush().unwrap();
         // translate the content
-        let translated_content = agent_translate(content);
+        let translated_content = agent_translate(content, "deepseek");
         std::fs::write(&translated_path, translated_content).unwrap();
         let file_entry = FileEntry {
             path: f.clone(),
