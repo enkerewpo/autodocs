@@ -1,4 +1,14 @@
+//! autodocs CLI tool for auto-translating files in a Git repository.
+//!
+//! This tool allows users to run an automatic translation process on the files of a given repository. It uses
+//! a specified translation engine, such as OpenAI's GPT model, to translate the contents of files that match
+//! certain filters. The translation process is tracked using metadata stored in JSON format. The tool supports
+//! operations like cloning a repository, checking for changes, and ensuring that only files that have not been
+//! translated or have changed are retranslated.
+
 use clap::{Command, arg};
+use openai_api_rust::chat::*;
+use openai_api_rust::*;
 use serde::{Deserialize, Serialize};
 use serde_yaml::{self};
 use sha2::Digest;
@@ -41,14 +51,18 @@ struct TranslationMeta {
 }
 
 fn cli() -> Command {
-    Command::new("deepdocs").about("DeepDocs CLI").subcommand(
-        Command::new("run")
-            .about("Run the auto-translation using the config file")
-            .arg(arg!(<CONFIG> "The YAML config file to use"))
-            .arg_required_else_help(true),
-    )
+    Command::new("autodocs")
+        .about("autodocs CLI, written by wheatfox(wheatfox17@icloud.com)")
+        .subcommand(
+            Command::new("run")
+                .about("Run the auto-translation using the config file")
+                .arg(arg!(<CONFIG> "The YAML config file to use"))
+                .arg_required_else_help(true),
+        )
 }
 
+/// Parse the target filter string into a list of suffixes.
+/// For example, "*.md *.txt" will be parsed into ["md", "txt"].
 fn prase_target_suffix(target: &str) -> Vec<String> {
     // "*.md *.txt" -> "md txt"
     let mut suffix = target.replace("*", "");
@@ -58,9 +72,7 @@ fn prase_target_suffix(target: &str) -> Vec<String> {
     r
 }
 
-use openai_api_rust::chat::*;
-use openai_api_rust::*;
-
+/// Translate the content using the specified translation engine.
 fn agent_translate(content: String, config: &TranslationConfig) -> String {
     let engine = &config.engine;
     let url = &engine.url;
@@ -96,6 +108,7 @@ fn agent_translate(content: String, config: &TranslationConfig) -> String {
     message.content.clone()
 }
 
+/// The main function to run the auto-translation process.
 fn run(config: TranslationConfig) {
     println!("Running the auto-translation with the following config:");
     println!("{:?}", config);
@@ -306,10 +319,13 @@ fn run(config: TranslationConfig) {
     );
 }
 
+/// Get the filename from the path.
+/// For example, "/path/to/file.txt" will return "file.txt".
 fn filename(path: &str) -> String {
     path.rsplitn(2, "/").next().unwrap().to_string()
 }
 
+/// Write the metadata to the metadata file.
 fn write_meta(meta: &TranslationMeta, meta_path: &str) {
     let meta = serde_json::to_string_pretty(meta);
     if let Err(e) = meta {
@@ -343,7 +359,8 @@ fn main() {
             }
         }
         _ => {
-            println!("No subcommand provided");
+            // print the help message
+            cli().print_help().unwrap();
         }
     }
 }
